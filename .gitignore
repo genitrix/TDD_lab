@@ -1,0 +1,16 @@
+echo db.splite3
+db.splite3
+geckodriver.log
+db.sqlite3
+db.sqlite3
+db.sqlite3
+geckodriver.log
+*.pyc
+db.sqlite3
+db.sqlite3
+geckodriver.log
+__pychache__
+*.pyc
+db.splite3
+.DS_Store
+superlists/.DS_Store
