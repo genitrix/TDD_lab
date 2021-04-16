@@ -21,7 +21,7 @@ class NewVisitorTest(unittest.TestCase):
         self.assertIn("To-Do", self.browser.title)
         header_next = self.browser.find_element_by_tag_name('h1').text
         self.assertIn("TO-Do", header_next)
-        
+
         # She is invited to enter a to-do item straight away
         inputbox = self.browser.find_element_by_id('id_new_item')
         self.assertEqual(
