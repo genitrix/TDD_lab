@@ -31,9 +31,17 @@ class NewVisitorTest(unittest.TestCase):
 
         # She is invited to enter a to-do item straight away
         inputbox = self.browser.find_element_by_id('id_new_item')
+        inputbox.send_keys("Buy peacock feathers")
+        inputbox.send_keys(Keys.ENTER)
+        # sleep is required
+        # 刷新太快，需要sleep
+        time.sleep(1)
+        # get again
+        # 对象会变，再获取一次
+        inputbox = self.browser.find_element_by_id('id_new_item')
         inputbox.send_keys("Use peacock feathers to make a fly")
         inputbox.send_keys(Keys.ENTER)
-        time.sleep(1)
+        time.sleep(10)
         # The page updates again, and now shows both items on her list
         self.check_for_row_in_list_table("1: Buy peacock feathers")
         self.check_for_row_in_list_table("2: Use peacock feathers to make a fly")
