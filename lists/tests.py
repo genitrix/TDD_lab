@@ -1,126 +1,165 @@
-from selenium import webdriver  # 1
-import unittest
-from selenium.webdriver.common.keys import Keys
-import time
-from django.test import LiveServerTestCase
-from selenium.common.exceptions import WebDriverException
+from django.urls import resolve
+from django.test import TestCase
+from django.http import HttpRequest
+from lists.views import home_page  # (2)
+from django.test import TestCase
+from django.template.loader import render_to_string
+from lists.models import Item, List
 
-MAX_WAIT = 10
+
+# Create your tests here.
 
 
-class NewVisitorTest(LiveServerTestCase):  # (1)
+class HomePageTest(TestCase):
 
-    def setUp(self):  # (3)
-        self.browser = webdriver.Firefox()
+    # def test_displays_all_lists_items(self):
+    #     Item.objects.create(text='itemey 1')
+    #     Item.objects.create(text='itemey 2')
+    #
+    #     response = self.client.get('/')
+    #
+    #     self.assertIn('itemey 1', response.content.decode())
+    #     self.assertIn('itemey 2', response.content.decode())
 
-    def tearDown(self):  # (3)
-        self.browser.quit()
+    # test1
+    def test_use_home_template(self):
+        response = self.client.get('/')
+        self.assertTemplateUsed(response, 'home.html')
 
-    def check_for_row_in_list_table(self, row_text):
-        table = self.browser.find_element_by_id('id_list_table')
-        rows = table.find_elements_by_tag_name('tr')
-        self.assertIn(row_text, [row.text for row in rows])
+    # def test_root_url_resolve_to_home_page_view(self):
+    #     found = resolve('/')  # (1)
+    #     self.assertEqual(found.func, home_page)  # (1)
 
-    def test_can_start_a_list_for_one_user(self):  # (2)
-        # Edith has heard about a cool new online to-do app.She goes
-        # to check out its homepage
-        self.browser.get(self.live_server_url)
+    # def test_home_page_returns_correct_html(self):
+    #     response = self.client.get('/')  # 1
+    #
+    #     html = response.content.decode('utf8')  # 2
+    #     self.assertTrue(html.startswith('<html>'))
+    #     self.assertIn('<title>To-Do lists</title>', html)
+    #     self.assertTrue(html.endswith('</html>'))
+    #
+    #     self.assertTemplateUsed(response, 'home.html')  # 3
+    #
+    #     # request = HttpRequest()
+    #     # response = home_page(request)
+    #     # html = response.content.decode('utf8')
+    #     # expected_html = render_to_string('home.html')
+    #     # self.assertEqual(html, expected_html)
+    #
+    #     # self.assertTrue(html.startswith('<html>'))
+    #     # self.assertIn('<title>To-Do lists</title>', html)
+    #     # self.assertTrue(html.endswith('</html>'))
 
-        # She notices the page title and header mention to-do lists
-        self.assertIn('To-Do', self.browser.title)  # (4)
-        header_text = self.browser.find_element_by_tag_name('h1').text
-        self.assertIn('To-Do', header_text)
+    # # 4
+    # def test_only_saves_items_when_necessary(self):
+    #     self.client.get('/')
+    #     self.assertEqual(Item.objects.count(), 0)
 
-        # She is invited to enter a to-do item straight away
 
-        inputbox = self.browser.find_element_by_id('id_new_item')
-        self.assertEqual(
-            inputbox.get_attribute('placeholder'),
-            'Enter a to-do item'
+class ListViewTest(TestCase):
+
+    def test_uses_list_template(self):
+        list_ = List.objects.create()
+        response = self.client.get(f'/lists/{list_.id}/')
+        self.assertTemplateUsed(response, 'list.html')
+
+    def test_displays_only_items_for_that_list(self):
+        correct_list = List.objects.create()
+        Item.objects.create(text='itemey 1', list=correct_list)
+        Item.objects.create(text='itemey 2', list=correct_list)
+        other_list = List.objects.create()
+        Item.objects.create(text="other list item 1", list=other_list)
+        Item.objects.create(text="other list item 2", list=other_list)
+
+        response = self.client.get(f'/lists/{correct_list.id}/')
+
+        self.assertContains(response, 'itemey 1')
+        self.assertContains(response, 'itemey 2')
+        self.assertNotContains(response, 'other list item 1')
+        self.assertNotContains(response, "other list item 2")
+
+    def test_passes_correct_list_to_template(self):
+        other_list = List.objects.create()
+        correct_list = List.objects.create()
+        response = self.client.get(f'/lists/{correct_list.id}/')
+        self.assertEqual(response.context['list'], correct_list)
+
+
+# class SmokeTest(TestCase):
+#
+# 	def test_bad_maths(self):
+# 		self.assertEqual(1+1, 3)
+
+class ListAndItemModelTest(TestCase):
+
+    def test_saving_and_retrieving_items(self):
+        list_ = List()
+        list_.save()
+
+        first_item = Item()
+        first_item.text = 'The first (ever) list item'
+        first_item.list = list_
+        first_item.save()
+
+        second_item = Item()
+        second_item.text = 'Item the second'
+        second_item.list = list_
+        second_item.save()
+
+        saved_list = List.objects.first()
+        self.assertEqual(saved_list, list_)
+
+        saved_items = Item.objects.all()
+        self.assertEqual(saved_items.count(), 2)
+
+        first_saved_item = saved_items[0]
+        second_saved_item = saved_items[1]
+        self.assertEqual(first_saved_item.text, 'The first (ever) list item')
+        self.assertEqual(first_saved_item.list, list_)
+        self.assertEqual(second_saved_item.text, 'Item the second')
+        self.assertEqual(second_saved_item.list, list_)
+        # Chapter 7 Page 54 done!
+
+
+class NewListTest(TestCase):
+
+    def test_can_save_a_POST_request(self):
+        self.client.post('/lists/new', data={'item_text': 'A new list item'})
+
+        self.assertEqual(Item.objects.count(), 1)
+        new_item = Item.objects.first()
+        self.assertEqual(new_item.text, 'A new list item')
+
+        # 3
+
+    def test_redirects_after_POST(self):
+        response = self.client.post('/lists/new', data={'item_text': 'A new list item'})
+        new_list = List.objects.first()
+        self.assertRedirects(response, f'/lists/{new_list.id}/')
+        # self.assertEqual(response.status_code, 302)
+        # self.assertEqual(response['location'], '/lists/the-only-list-in-the-world/')
+
+
+class NewItemTest(TestCase):
+    def test_can_save_a_POST_request_to_an_existing_list(self):
+        other_list = List.objects.create()
+        correct_list = List.objects.create()
+
+        self.client.post(
+            f'/lists/{correct_list.id}/add_item',
+            data={'item_text': 'A new item for an existing list'}
         )
-        # She types "Buy peacock feathers" into a text box (Edith's hobby is tying fly-fishing lures)
-        inputbox.send_keys("Buy peacock feathers")
-        # When she hits enter, the page updates, and now the page lists
-        # "1:Buy peacock feathers as an item in a to-do list
-        inputbox.send_keys(Keys.ENTER)
-        self.wait_for_row_in_list_table('1: Buy peacock feathers')
+        self.assertEqual(Item.objects.count(), 1)
+        new_item = Item.objects.first()
+        self.assertEqual(new_item.text, "A new item for an existing list")
+        self.assertEqual(new_item.list, correct_list)
 
-        '''
-        table=self.browser.find_element_by_id('id_list_table')
-        rows=table.find_elements_by_tag_name('tr')
-   
-        self.assertIn('1: Buy peacock feathers',[row.text for row in rows])
-        self.assertIn(
-            '2: Use peacock feathers to make a fly',
-            [row.text for row in rows]
-            )
-        #There is still a text box inviting her to add another item. She
-        # enters "Use peacock feathers to make a fly" (Edith is very methodical)
-        self.fail('Finish the test!') #(5)
-        '''
-        # There is still a text box inviting her to add another itme.
-        # She enters "Use peacock ferthers to make a fly" (Edith is very methodical)
-        inputbox = self.browser.find_element_by_id('id_new_item')
-        inputbox.send_keys('Use peacock feathers to make a fly')
-        inputbox.send_keys(Keys.ENTER)
+    def test_redirects_to_list_view(self):
+        other_list = List.objects.create()
+        correct_list = List.objects.create()
 
-        # The page updates again, and now shows both items on her list
-        self.wait_for_row_in_list_table('1: Buy peacock feathers')
-        self.wait_for_row_in_list_table('2: Use peacock feathers to make a fly')
-
-        # self.fail('Finish the test!')
-
-    def test_multiple_users_can_start_lists_at_different_urls(self):
-        # Edith starts a new to-do list
-        self.browser.get(self.live_server_url)
-        inputbox = self.browser.find_element_by_id('id_new_item')
-        inputbox.send_keys('Buy peacock feathers')
-        inputbox.send_keys(Keys.ENTER)
-        self.wait_for_row_in_list_table('1: Buy peacock feathers')
-
-        # She notices that her list has a unique URL
-        edith_list_url = self.browser.current_url
-        self.assertRegex(edith_list_url, '/lists/.+')
-
-        # Now a new user, Francis, comes along to the site.
-        ## We use a new browser session to make sure that no information of Edith's is coming through from cookies etc
-        self.browser.quit()
-        self.browser = webdriver.Firefox()
-
-        # Francis vists the home page. There is no sign of Edith's
-        # list
-        self.browser.get(self.live_server_url)
-        page_text = self.browser.find_element_by_tag_name('body').text
-        self.assertNotIn('Buy peacock feathers', page_text)
-        self.assertNotIn('make a fly', page_text)
-
-        # Francis starts a new list by entering a new item.He is less interesting than Edith
-        inputbox = self.browser.find_element_by_id('id_new_item')
-        inputbox.send_keys('Buy milk')
-        inputbox.send_keys(Keys.ENTER)
-        self.wait_for_row_in_list_table('1: Buy milk')
-
-        # Francis gets his own unique URL
-        francis_list_url = self.browser.current_url
-        self.assertRegex(francis_list_url, '/lists/.+')
-        self.assertNotEqual(francis_list_url, edith_list_url)
-
-        # Again, there is no trace of Edith's list
-        page_text = self.browser.find_element_by_tag_name('body').text
-        self.assertNotIn('Buy peacock feathers', page_text)
-        self.assertIn('Buy milk', page_text)
-
-        # Satisfied, they both go back to sleep
-
-    def wait_for_row_in_list_table(self, row_text):
-        start_time = time.time()
-        while True:
-            try:
-                table = self.browser.find_element_by_id('id_list_table')
-                rows = table.find_elements_by_tag_name('tr')
-                self.assertIn(row_text, [row.text for row in rows])
-                return
-            except (AssertionError, WebDriverException) as e:
-                if time.time() - start_time > MAX_WAIT:
-                    raise e
-                time.sleep(0.5)
+        response = self.client.post(
+            f'/lists/{correct_list.id}/add_item',
+            data={'item_text': "A new item for an existing list"}
+        )
+        self.assertRedirects(response, f'/lists/{correct_list.id}/')
