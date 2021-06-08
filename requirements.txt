@@ -1,0 +1,4 @@
+pip
+Django==3.2.4
+selenium==3.141.0
+wheel==0.36.2
