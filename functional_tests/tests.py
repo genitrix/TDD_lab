@@ -4,13 +4,16 @@ from selenium.webdriver.common.keys import Keys
 import time
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from selenium.common.exceptions import WebDriverException
+from selenium.webdriver.firefox.options import Options
 import os
 MAX_WAIT = 10
 
 
 class NewVisitorTest(StaticLiveServerTestCase):  # (1)
     def setUp(self):
-        self.browser = webdriver.Firefox()
+        options = Options()
+        options.headless = True
+        self.browser = webdriver.Firefox(options=options)
         staging_server = os.environ.get('STAGING_SERVER')
         # Added
         staging_server = '140.143.228.33'
@@ -38,8 +41,10 @@ class NewVisitorTest(StaticLiveServerTestCase):  # (1)
             delta=10
         )
 
-    def setUp(self):  # (3)
-        self.browser = webdriver.Firefox()
+    def setUp(self):
+        options = Options()
+        options.headless = True
+        self.browser = webdriver.Firefox(options=options)
 
     def tearDown(self):  # (3)
         self.browser.quit()
@@ -113,7 +118,9 @@ class NewVisitorTest(StaticLiveServerTestCase):  # (1)
         # Now a new user, Francis, comes along to the site.
         ## We use a new browser session to make sure that no information of Edith's is coming through from cookies etc
         self.browser.quit()
-        self.browser = webdriver.Firefox()
+        options = Options()
+        options.headless = True
+        self.browser = webdriver.Firefox(options=options)
 
         # Francis vists the home page. There is no sign of Edith's
         # list
