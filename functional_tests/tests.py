@@ -6,6 +6,9 @@ from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.firefox.options import Options
 import os
+
+from selenium.webdriver.firefox.options import Options
+
 MAX_WAIT = 10
 
 
