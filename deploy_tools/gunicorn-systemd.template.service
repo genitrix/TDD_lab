@@ -1,0 +1,10 @@
+[Unit]
+Description=Gunicorn server for SITENAME
+After=network.target
+[Service]
+Restart=on-failure
+User=root
+WorkingDirectory=/home/ubuntu/sites/SITEALIAS/source
+ExecStart=/usr/bin/gunicorn3 --bind unix:/tmp/SITENAME.socket superlists.wsgi:application
+[Install]
+WantedBy=multi-user.target
