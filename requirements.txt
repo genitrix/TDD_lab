@@ -1,5 +1,6 @@
 pip
-Django==3.2.4
+Django~=3.1.7
 selenium==3.141.0
 wheel==0.36.2
 gunicorn
+Fabric~=1.14.0
