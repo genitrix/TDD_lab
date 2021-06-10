@@ -3,5 +3,5 @@ setuptools_rust
 Django~=3.1.7
 selenium==3.141.0
 wheel==0.36.2
-gunicorn3
+gunicorn
 Fabric~=1.14.0
